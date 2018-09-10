@@ -1,0 +1,21 @@
+.gradle
+/local.properties
+.DS_Store
+*.iml
+*.iws
+*.ipr
+*~
+*.swp
+
+build/
+
+# Exclude the .idea folder except for the Fjord copyright profile.
+!.idea/
+
+.idea/*
+!.idea/copyright/
+
+.idea/copyright/*
+!.idea/copyright/Chaos_Engine.xml
+
+

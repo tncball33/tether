@@ -1,0 +1,99 @@
+/*
+ * Copyright 2017-2018 Fjord
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.bmuschko.nexus'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+
+android {
+    compileSdkVersion compile_version
+
+    defaultConfig {
+        minSdkVersion min_version
+        targetSdkVersion target_version
+        versionCode version_code
+        versionName version_name
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ['src/main/java', 'src/main/kotlin']
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    implementation "com.google.android.material:material:$material_version"
+
+    // Rx
+    implementation "io.reactivex.rxjava2:rxkotlin:$rx_kotlin_version"
+    implementation "io.reactivex.rxjava2:rxandroid:$rx_java2_version"
+    api "com.jakewharton.rxbinding2:rxbinding:$rx_binding_version"
+    api "com.jakewharton.rxbinding2:rxbinding-appcompat-v7:$rx_binding_version"
+
+    // Architecture Components
+    implementation "androidx.lifecycle:lifecycle-runtime:$arch_version"
+    implementation "androidx.lifecycle:lifecycle-common-java8:$arch_version"
+    implementation "androidx.lifecycle:lifecycle-extensions:$arch_version"
+    testImplementation "androidx.arch.core:core-testing:$arch_version"
+
+    // Testing
+    testImplementation 'junit:junit:4.12'
+    testImplementation "org.mockito:mockito-core:2.22.0"
+    androidTestImplementation 'androidx.test:runner:1.1.0-alpha4'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0-alpha4'
+}
+
+task libJavadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    excludes = ['**/*.kt']
+}
+
+task javadocJar(type: Jar, dependsOn: libJavadoc) {
+    classifier = 'javadoc'
+    from libJavadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+}
+
+// Needed to correctly generate
+group = POM_GROUP_ID
+version = VERSION_NAME
+project.archivesBaseName = POM_ARTIFACT_ID
+
+apply from: rootProject.file('distribution.gradle')
