@@ -1,4 +1,5 @@
-#Tether
+#Tether  
+
 `Version` - 1.0.0  
 
 `Kotlin` - 1.2.61  
@@ -159,7 +160,7 @@ This will produce the appropriate binaries and copy it into your local maven rep
 In your project, include your dependency as you normally would. For example:
 
     dependencies {
-        classpath 'com.fjordnet.tether:tether:1.0.0'
+        implementation 'com.fjordnet.tether:tether:1.0.0'
     }
 
 You will need to add the local maven repository for Gradle to be able to find it.
