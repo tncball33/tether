@@ -62,12 +62,11 @@ class SearchFragment : Fragment() {
         return binding.root
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.search_menu, menu)
 
-        inflater?.inflate(R.menu.search_menu, menu)
-
-        menu?.let {
+        menu.let {
             val searchItem = it.findItem(R.id.action_search)
             searchItem.expandActionView()
 
@@ -83,7 +82,7 @@ class SearchFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        viewModel = ViewModelProviders.of(this, SearchViewModelFactory(this, SearchServiceImpl()))
+        viewModel = ViewModelProviders.of(this, SearchViewModelFactory(SearchServiceImpl()))
                 .get(SearchViewModel::class.java)
 
         setupRecyclerView()

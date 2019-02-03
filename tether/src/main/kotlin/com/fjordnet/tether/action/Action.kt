@@ -19,13 +19,17 @@ package com.fjordnet.tether.action
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.*
 import com.fjordnet.tether.binder.Driver
+import com.fjordnet.tether.extensions.skipNull
 import com.fjordnet.tether.extensions.updateValue
+import com.fjordnet.tether.reactive.toForeverObservable
 import com.fjordnet.tether.type.Optional
 import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 
+@Suppress("UNCHECKED_CAST")
 /**
  *
  * Typical usage flow for this class:
@@ -49,32 +53,38 @@ To use this with RxJava we had to create a class that contains a nullable type.
 This is because RxJava assumes everything to be non-null but LiveData can hold null values. I hate that we're going
 to have to check against this but until LiveData and RxJava play nice together we have to.
  */
-class Action<Input, Output> constructor(
-        private val execute: ((Input) -> Observable<Output>)?
-) : LiveData<Optional<Output>>(), LifecycleObserver {
+class Action<Input, Output> constructor(private val execute: ((Input) -> Observable<Output>)?) :
+    MutableLiveData<Optional<Output>>(), LifecycleObserver {
 
     /**
      * This emits whenever the underlying observable has completed.
      */
-    val completed: LiveData<Optional<Unit>> by lazy {
+    val completed: Observable<Unit> by lazy {
         _completed.value = Optional()
         _completed
+            .toForeverObservable()
+            .skipNull()
     }
 
     /**
      * This emits a throwable whenever the underlying observable emits an error.
      */
-    val error: LiveData<Optional<Throwable>> by lazy {
+    val error: Observable<Throwable> by lazy {
         _error.value = Optional()
         _error
+            .toForeverObservable()
+            .skipNull()
     }
 
     /**
      * This is true when the observable is subscribed to and false once the observable has emitted data.
      */
-    val executing: LiveData<Optional<Boolean>> by lazy {
+    val executing: Observable<Boolean> by lazy {
         _executing.value = Optional()
         _executing
+            .toForeverObservable()
+            .skipNull()
+            .startWith(false)
     }
 
     private var trigger: Driver<Input>? = null
@@ -90,9 +100,6 @@ class Action<Input, Output> constructor(
     private var observable: Observable<Output>? = null
     private var disposable: Disposable? = null
 
-    @VisibleForTesting
-    var observeOnScheduler: Scheduler? = null
-
     /**
      * Use this constructor to make the action stay subscribed to it's underlying observable.
      * Default behavior is the Action will dispose after the first successful emission.
@@ -100,9 +107,9 @@ class Action<Input, Output> constructor(
      *
      */
     constructor(
-            lifeCycleOwner: LifecycleOwner,
-            trigger: Driver<Input>,
-            triggerExecute: (Input) -> Driver<Output>
+        lifeCycleOwner: LifecycleOwner,
+        trigger: Driver<Input>,
+        triggerExecute: (Input) -> Driver<Output>
     ) : this(null) {
         this.trigger = trigger
         this.lifeCycleOwner = lifeCycleOwner
@@ -139,21 +146,21 @@ class Action<Input, Output> constructor(
      *          Similar to Rx subscribe onComplete Action.
      */
     fun observe(
-            owner: LifecycleOwner,
-            executing: (executing: Boolean?) -> Unit = { },
-            output: (output: Output?) -> Unit = { },
-            error: (error: Throwable?) -> Unit = { },
-            completed: () -> Unit = { }
+        owner: LifecycleOwner,
+        executing: (executing: Boolean?) -> Unit = { },
+        output: (output: Output?) -> Unit = { },
+        error: (error: Throwable?) -> Unit = { },
+        completed: () -> Unit = { }
     ): Action<Input, Output> {
 
         observe(owner,
-                Observer { value -> output(value?.item) })
+            Observer { value -> output(value?.item) })
         _error.observe(owner,
-                Observer { value -> error(value?.item) })
+            Observer { value -> error(value?.item) })
         _executing.observe(owner,
-                Observer { value -> executing(value?.item) })
+            Observer { value -> executing(value?.item) })
         _completed.observe(owner,
-                Observer { completed() })
+            Observer { completed() })
 
         return this
     }
@@ -190,18 +197,20 @@ class Action<Input, Output> constructor(
 
         // Subscribe to the observable
         disposable = observable
-                ?.observeOn(observeOnScheduler ?: AndroidSchedulers.mainThread())
-                ?.subscribe({ value ->
-                    this.value?.item = value
-                    setValue(this.value)
-                }, { error ->
-                    this._error.updateValue(error)
-                    finished()
-                }, {
-                    finished()
-                    _completed.updateValue(Unit)
-                    _completed.updateValue(null)
-                })
+            ?.subscribeOn(Schedulers.io())
+            ?.observeOn(AndroidSchedulers.mainThread())
+            ?.subscribe({ value ->
+                this.value?.item = value
+                setValue(this.value)
+            }, { error ->
+                finished()
+                this._error.updateValue(error)
+                _error.updateValue(null)
+            }, {
+                finished()
+                _completed.updateValue(Unit)
+                _completed.updateValue(null)
+            })
     }
 
     private fun commonInit() {
@@ -225,17 +234,17 @@ class Action<Input, Output> constructor(
         val localTriggerExecute = triggerExecute ?: return
 
         disposable = localTrigger
-                .doOnNext {
-                    _executing.updateValue(true)
-                }
-                .switchMap {
-                    localTriggerExecute(it).observable
-                }
-                .subscribe { value ->
-                    _executing.updateValue(false)
-                    this.value?.item = value
-                    setValue(this.value)
-                }
+            .doOnNext {
+                _executing.updateValue(true)
+            }
+            .switchMap {
+                localTriggerExecute(it).observable
+            }
+            .subscribe { value ->
+                _executing.updateValue(false)
+                this.value?.item = value
+                setValue(this.value)
+            }
     }
 
     private fun dispose() {

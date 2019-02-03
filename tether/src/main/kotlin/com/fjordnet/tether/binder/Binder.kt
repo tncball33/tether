@@ -34,9 +34,9 @@ import io.reactivex.disposables.Disposable
  * This is a one directional bind between the [Source.observable] and [Bindable.bindValue]
  */
 internal class Binder<Value>(
-        private var owner: LifecycleOwner,
-        private var bindable: Bindable<Value>,
-        private var source: Source<Value>
+    private var owner: LifecycleOwner,
+    private var bindable: Bindable<Value>,
+    private var source: Source<Value>
 ) : LifecycleObserver {
 
     private var disposable: Disposable? = null
@@ -61,13 +61,15 @@ internal class Binder<Value>(
     }
 
     /**
-     * Subscribes to the [source] to update the [bindable]
+     * Binds the [owner] and [source]
+     * @param owner the [LifecycleOwner] that this should be tied to
+     * @param bindable the [Bindable] that holds the type
+     * @param source the [Source] which provides an observable
      */
     private fun subscribe() {
         disposable = source.observable.subscribe({
             bindable.bindValue = it
         }, {
-            Log.e("Bindable", "Error in subscription", it)
             cleanUp()
         }, { cleanUp() })
     }
@@ -93,6 +95,8 @@ internal class Binder<Value>(
             disposable?.dispose()
             disposable = null
         }
+
+        cleanUp()
     }
 
     /**
