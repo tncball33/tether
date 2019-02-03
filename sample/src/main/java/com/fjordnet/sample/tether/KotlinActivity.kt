@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
 import com.fjordnet.sample.tether.form.FormFragment
@@ -74,7 +75,7 @@ class KotlinActivity : AppCompatActivity() {
 
         return when (item.itemId) {
             android.R.id.home -> {
-                binding.drawerLayout.openDrawer(Gravity.START)
+                binding.drawerLayout.openDrawer(GravityCompat.START)
                 true
             }
             else -> super.onOptionsItemSelected(item)

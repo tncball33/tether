@@ -22,8 +22,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.fjordnet.sample.tether.interfaces.SearchService
 
 @Suppress("UNCHECKED_CAST")
-class SearchViewModelFactory(val lifecycleOwner: LifecycleOwner, val searchService: SearchService) : ViewModelProvider.Factory {
+class SearchViewModelFactory(val searchService: SearchService) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-        return SearchViewModel(lifecycleOwner, searchService) as T
+        return SearchViewModel(searchService) as T
     }
 }

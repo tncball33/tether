@@ -26,12 +26,12 @@ import com.fjordnet.tether.binder.toDriver
 import com.fjordnet.tether.extensions.skipNull
 import com.fjordnet.tether.reactive.toForeverObservable
 import com.fjordnet.tether.type.Visibility
+import com.fjordnet.tether.viewmodel.LifeCycleViewModel
 import io.reactivex.schedulers.Schedulers
 
 class SearchViewModel(
-        private var lifecycleOwner: LifecycleOwner,
         private val searchService: SearchService
-) : ViewModel() {
+) : LifeCycleViewModel() {
 
     val progressBarVisibilityDriver: Driver<Visibility>
     val recyclerViewVisibilityDriver: Driver<Visibility>
@@ -41,7 +41,7 @@ class SearchViewModel(
     val searchResults = MutableLiveData<List<String>>()
 
     val searchAction: Action<String, List<String>> by lazy {
-        Action(lifecycleOwner, trigger = searchText.toForeverObservable().toDriver()) {
+        Action(this, trigger = searchText.toForeverObservable().toDriver()) {
             val searchQuery = it
 
             if (searchQuery.isEmpty()) {
@@ -60,15 +60,13 @@ class SearchViewModel(
                 .skipNull()
                 .toDriver(listOf())
 
-        progressBarVisibilityDriver = searchAction.executing.toForeverObservable()
-                .skipNull()
+        progressBarVisibilityDriver = searchAction.executing
                 .map { executing ->
                     if (executing) Visibility.VISIBLE else Visibility.INVISIBLE
                 }
                 .toDriver(Visibility.INVISIBLE)
 
-        recyclerViewVisibilityDriver = searchAction.executing.toForeverObservable()
-                .skipNull()
+        recyclerViewVisibilityDriver = searchAction.executing
                 .map { executing ->
                     if (executing) Visibility.INVISIBLE else Visibility.VISIBLE
                 }
